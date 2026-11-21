@@ -44,13 +44,33 @@ static std::string read_native_includes(const std::vector<std::string>& paths,
 #define WS_LIBS_DIR "libs"
 #endif
 
+/* Locate libs/ relative to the executable first, then to the source file and
+ * finally to the current directory. This keeps the binary portable across
+ * Linux and Windows (no absolute build-time path baked in). */
+static std::filesystem::path find_libs_dir(const std::string& base_dir,
+                                           const char* exe_path) {
+    std::error_code ec;
+    std::vector<std::filesystem::path> candidates;
+    candidates.emplace_back(WS_LIBS_DIR);
+    if (exe_path) {
+        std::filesystem::path exe(exe_path);
+        if (exe.has_parent_path()) candidates.push_back(exe.parent_path() / "libs");
+    }
+    if (!base_dir.empty()) candidates.push_back(std::filesystem::path(base_dir) / "libs");
+    for (const auto& c : candidates) {
+        if (std::filesystem::is_directory(c, ec) && !ec) return c;
+    }
+    return candidates.front();
+}
+
 /* The bytecode C runtime contains calls to all c_* (id 48..80), so
  * in this mode we always include all standard C libraries of the project. */
 static std::vector<std::string> bytecode_native_paths(
-        const std::vector<std::string>&, const std::string&) {
+        const std::vector<std::string>&, const std::string& base_dir,
+        const char* exe_path) {
     std::vector<std::string> out;
     std::error_code ec;
-    std::filesystem::path dir(WS_LIBS_DIR);
+    std::filesystem::path dir = find_libs_dir(base_dir, exe_path);
     for (std::filesystem::directory_iterator it(dir, ec), end; it != end; it.increment(ec)) {
         if (ec) break;
         if (it->path().extension() == ".c") out.push_back(it->path().string());
@@ -128,7 +148,7 @@ int main(int argc, char** argv) {
             bool bytecode_mode = false;
             for (int i = 3; i < argc; ++i) if (std::string(argv[i]) == "-b") bytecode_mode = true;
             std::string native = read_native_includes(
-                bytecode_mode ? bytecode_native_paths(parser.native_includes(), base_dir)
+                bytecode_mode ? bytecode_native_paths(parser.native_includes(), base_dir, argv[0])
                               : parser.native_includes(),
                 base_dir);
             auto start = std::chrono::steady_clock::now();

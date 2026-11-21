@@ -1,0 +1,61 @@
+name: Build release binaries
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev mingw-w64 zip
+
+      - name: Build Linux binary
+        run: |
+          make clean
+          make -j2
+          mkdir -p dist/linux
+          cp wornew dist/linux/
+
+      - name: Build Windows binary
+        run: |
+          make windows
+          mkdir -p dist/windows
+          cp wornew.exe dist/windows/
+
+      - name: Assemble portable archives
+        run: |
+          for os in linux windows; do
+            cp -r libs README.md demo_v05.wor test.wor test_libs.wor test_c_libs.wor demo_big dist/$os/
+          done
+          (cd dist/linux && zip -r ../wornew-linux-x86_64.zip .)
+          (cd dist/windows && zip -r ../wornew-windows-x86_64.zip .)
+          cp dist/linux/wornew dist/wornew-linux-x86_64
+          cp dist/windows/wornew.exe dist/wornew-windows-x86_64.exe
+          rm -rf dist/linux dist/windows
+
+      - name: Verify artifacts
+        run: |
+          ls -lh dist
+          file dist/wornew-linux-x86_64 dist/wornew-windows-x86_64.exe
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.6.1
+          name: WornewScript v0.6.1
+          files: |
+            dist/*.zip
+            dist/wornew-linux-x86_64
+            dist/wornew-windows-x86_64.exe
+          generate_release_notes: true

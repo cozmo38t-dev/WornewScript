@@ -16,6 +16,18 @@ make clean
 Flags: `-O2 -std=c++17 -Wall -Wextra -pedantic` (0 warnings), linked with `-lX11`
 (needed for windows; on Windows — `gdi32`/`user32`).
 
+## Prebuilt binaries
+
+Ready-to-run binaries for **Linux x86_64** and **Windows x86_64** are attached to
+the [latest Release](../../releases/latest). The Windows build is statically
+linked; `gcc` is only needed if you use the `compile` command.
+
+To build the Windows binary yourself with MinGW-w64:
+
+```bash
+make windows     # produces wornew.exe
+```
+
 ## Running
 
 ```bash
