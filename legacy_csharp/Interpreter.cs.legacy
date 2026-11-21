@@ -1,0 +1,150 @@
+using System;
+using System.Collections.Generic;
+
+public class Interpreter {
+    private Dictionary<string, string> _variables = new Dictionary<string, string>();
+    
+    public void Run(List<Token> tokens) {
+        int i = 0;
+        Execute(tokens, ref i, tokens.Count);
+    }
+    
+    private void Execute(List<Token> tokens, ref int i, int end) {
+        while (i < end) {
+            Token token = tokens[i];
+            
+            if (token.Type == TokenType.Say) {
+                i++;
+                List<Token> expr = new List<Token>();
+                while (i < end && tokens[i].Type != TokenType.Semi && tokens[i].Type != TokenType.EOF) {
+                    expr.Add(tokens[i]);
+                    i++;
+                }
+                Console.WriteLine(EvaluateExpression(expr));
+                if (i < end && tokens[i].Type == TokenType.Semi) i++;
+            }
+            else if (token.Type == TokenType.Var) {
+                i++;
+                string name = tokens[i].Value;
+                i++;
+                if (i < end && tokens[i].Type == TokenType.Equals) i++;
+                
+                List<Token> expr = new List<Token>();
+                while (i < end && tokens[i].Type != TokenType.Semi && tokens[i].Type != TokenType.EOF) {
+                    expr.Add(tokens[i]);
+                    i++;
+                }
+                _variables[name] = EvaluateExpression(expr);
+                if (i < end && tokens[i].Type == TokenType.Semi) i++;
+            }
+            else if (token.Type == TokenType.While) {
+                i++;
+                List<Token> cond = new List<Token>();
+                while (i < end && tokens[i].Type != TokenType.LBrace) {
+                    cond.Add(tokens[i]);
+                    i++;
+                }
+                if (i < end && tokens[i].Type == TokenType.LBrace) i++;
+                
+                int bodyStart = i;
+                
+                int depth = 1;
+                int j = i;
+                while (j < end && depth > 0) {
+                    if (tokens[j].Type == TokenType.LBrace) depth++;
+                    else if (tokens[j].Type == TokenType.RBrace) depth--;
+                    j++;
+                }
+                int bodyEnd = j - 1;
+                
+                while (EvaluateCondition(cond)) {
+                    int k = bodyStart;
+                    Execute(tokens, ref k, bodyEnd);
+                }
+                
+                i = j;
+            }
+            else if (token.Type == TokenType.Identifier) {
+                string name = token.Value;
+                i++;
+                if (i < end && tokens[i].Type == TokenType.Equals) i++;
+                
+                List<Token> expr = new List<Token>();
+                while (i < end && tokens[i].Type != TokenType.Semi && tokens[i].Type != TokenType.EOF) {
+                    expr.Add(tokens[i]);
+                    i++;
+                }
+                _variables[name] = EvaluateExpression(expr);
+                if (i < end && tokens[i].Type == TokenType.Semi) i++;
+            }
+            else {
+                i++;
+            }
+        }
+    }
+    
+    private bool EvaluateCondition(List<Token> cond) {
+        for (int j = 0; j < cond.Count; j++) {
+            TokenType t = cond[j].Type;
+            if (t == TokenType.Greater || t == TokenType.Less 
+                || t == TokenType.EqualsEquals || t == TokenType.NotEquals) {
+                
+                List<Token> left = cond.GetRange(0, j);
+                List<Token> right = cond.GetRange(j + 1, cond.Count - j - 1);
+                
+                double a = double.Parse(EvaluateExpression(left));
+                double b = double.Parse(EvaluateExpression(right));
+                
+                return t switch {
+                    TokenType.Greater => a > b,
+                    TokenType.Less => a < b,
+                    TokenType.EqualsEquals => a == b,
+                    TokenType.NotEquals => a != b,
+                    _ => false
+                };
+            }
+        }
+        return double.Parse(EvaluateExpression(cond)) != 0;
+    }
+    
+    private string EvaluateExpression(List<Token> expr) {
+        int j = 0;
+        while (j < expr.Count) {
+            if (expr[j].Type == TokenType.Star || expr[j].Type == TokenType.Slash) {
+                double left = double.Parse(ValueOf(expr[j - 1]));
+                double right = double.Parse(ValueOf(expr[j + 1]));
+                double res = expr[j].Type == TokenType.Star ? left * right : left / right;
+                
+                expr.RemoveRange(j - 1, 3);
+                expr.Insert(j - 1, new Token(TokenType.Number, res.ToString(), 0));
+                j = 0;
+            } else {
+                j++;
+            }
+        }
+        
+        if (expr.Count == 0) return "0";
+        
+        double result = double.Parse(ValueOf(expr[0]));
+        j = 1;
+        while (j < expr.Count) {
+            TokenType op = expr[j].Type;
+            double right = double.Parse(ValueOf(expr[j + 1]));
+            if (op == TokenType.Plus) result += right;
+            else if (op == TokenType.Minus) result -= right;
+            j += 2;
+        }
+        
+        return result.ToString();
+    }
+    
+    private string ValueOf(Token t) {
+        if (t.Type == TokenType.Number) return t.Value;
+        if (t.Type == TokenType.String) return t.Value;
+        if (t.Type == TokenType.Identifier) {
+            if (_variables.ContainsKey(t.Value)) return _variables[t.Value];
+            return "0";
+        }
+        return "0";
+    }
+}

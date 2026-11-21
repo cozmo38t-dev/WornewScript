@@ -1,0 +1,6 @@
+// io.wor — output and small helpers
+func println(s) { say s; }
+func blank() { say ""; }
+func label_value(k, v) { say k + ": " + v; }
+func warn(msg) { say "[!] " + msg; }
+func ok(msg) { say "[OK] " + msg; }

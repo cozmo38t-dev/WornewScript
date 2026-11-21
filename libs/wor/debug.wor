@@ -1,0 +1,10 @@
+// debug.wor — checks and output formatting
+func dbg_assert(cond, msg) {
+    if !cond { say "FAIL: " + msg; } else { say "OK: " + msg; }
+}
+func dbg_assert_eq(a, b, msg) {
+    if a == b { say "OK: " + msg; }
+    else { say "FAIL: " + msg + " (" + a + " != " + b + ")"; }
+}
+func dbg_sep() { say "----------------------------------------"; }
+func dbg_title(t) { dbg_sep(); say t; dbg_sep(); }

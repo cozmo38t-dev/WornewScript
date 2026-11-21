@@ -1,0 +1,14 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.exe
+*.gccerr
+wornew
+prog.c
+
+# Local backups and editor files
+*.bak
+*.tar.gz
+.DS_Store
+*~

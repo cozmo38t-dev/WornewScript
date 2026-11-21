@@ -1,0 +1,38 @@
+# WornewScript v0.5 — demonstration of new features
+
+say "=== for + elif + %= ===";
+var x = 17;
+for (var i = 0; i < 5; i += 1) {
+    if i == 2 { continue; }
+    x %= 7;
+    say "i=" + i + " x=" + x;
+}
+
+if x > 10 { say "a lot"; }
+elif x > 3 { say "a bit: " + x; }
+else { say "a little"; }
+
+say "=== nested for (same counter name) ===";
+for (var i = 0; i < 3; i += 1) {
+    for (var i = 0; i < 3; i += 1) {
+        say i;
+    }
+}
+
+say "=== math ===";
+say sin(0);
+say cos(0);
+say floor(2.7);
+say ceil(2.1);
+say round(2.5);
+say log(exp(1));
+say log10(1000);
+say sign(-42);
+say clamp(99, 0, 10);
+
+say "=== functions and recursion ===";
+func fact(n) {
+    if n <= 1 { give 1; }
+    give n * fact(n - 1);
+}
+say fact(6);

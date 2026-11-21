@@ -1,0 +1,6 @@
+// physics.wor — basic mechanics
+func ph_speed(d, t) { if t == 0 { give 0; } give d / t; }
+func ph_accel(v, t) { if t == 0 { give 0; } give v / t; }
+func ph_force(m, a) { give m * a; }
+func ph_energy(m, v) { give 0.5 * m * v * v; }
+func ph_fall(t) { give 0.5 * 9.81 * t * t; }

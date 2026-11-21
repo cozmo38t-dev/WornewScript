@@ -1,0 +1,5 @@
+// time.wor — a simple stopwatch
+var t_start = 0;
+func t_begin() { t_start = clock(); give t_start; }
+func t_elapsed() { give clock() - t_start; }
+func t_now() { give clock(); }

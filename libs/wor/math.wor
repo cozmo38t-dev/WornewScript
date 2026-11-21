@@ -1,0 +1,28 @@
+// math.wor — math missing from the core
+func m_square(x) { give x * x; }
+func m_cube(x) { give x * x * x; }
+func m_fact(n) {
+    if n <= 1 { give 1; }
+    give n * m_fact(n - 1);
+}
+func m_gcd(a, b) {
+    while b != 0 {
+        var t = b;
+        b = a % b;
+        a = t;
+    }
+    give a;
+}
+func m_lcm(a, b) { give a / m_gcd(a, b) * b; }
+func m_hypot(a, b) { give sqrt(a * a + b * b); }
+func m_deg2rad(d) { give d * 3.141592653589793 / 180; }
+func m_rad2deg(r) { give r * 180 / 3.141592653589793; }
+func m_is_prime(n) {
+    if n < 2 { give 0; }
+    var i = 2;
+    while i * i <= n {
+        if n % i == 0 { give 0; }
+        i += 1;
+    }
+    give 1;
+}

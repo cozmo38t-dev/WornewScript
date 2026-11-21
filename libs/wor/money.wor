@@ -1,0 +1,5 @@
+// money.wor — percentages, discounts, taxes
+func mo_discount(price, pct) { give price * (1 - pct / 100); }
+func mo_vat(price, pct) { give price * (1 + pct / 100); }
+func mo_tip(bill, pct) { give bill * pct / 100; }
+func mo_split(total, people) { if people <= 0 { give 0; } give total / people; }

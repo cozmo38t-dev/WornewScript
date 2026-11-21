@@ -1,0 +1,24 @@
+// string.wor — string handling
+func s_repeat(text, n) {
+    var r = "";
+    var i = 0;
+    while i < n { r += text; i += 1; }
+    give r;
+}
+func s_spaces(n) { give s_repeat(" ", n); }
+func s_pad_left(text, n) {
+    var pad = n - len(text);
+    if pad <= 0 { give text; }
+    give s_spaces(pad) + text;
+}
+func s_pad_right(text, n) {
+    var pad = n - len(text);
+    if pad <= 0 { give text; }
+    give text + s_spaces(pad);
+}
+func s_banner(title) {
+    var line = s_repeat("=", len(title) + 4);
+    say line;
+    say "| " + title + " |";
+    say line;
+}

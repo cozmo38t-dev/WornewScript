@@ -1,0 +1,13 @@
+// loops.wor — ready-made loops
+func lp_sum(n) {
+    var s = 0;
+    for (var i = 1; i <= n; i += 1) { s += i; }
+    give s;
+}
+func lp_product(n) {
+    var p = 1;
+    for (var i = 1; i <= n; i += 1) { p *= i; }
+    give p;
+}
+func lp_count(n) { for (var i = 0; i < n; i += 1) { say i; } }
+func lp_repeat(text, n) { repeat n { say text; } }

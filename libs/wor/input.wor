@@ -1,0 +1,10 @@
+// input.wor — input with a prompt
+func ask_int(prompt) { give input(prompt): int; }
+func ask_num(prompt) { give input(prompt): num; }
+func ask_str(prompt) { give input(prompt): str; }
+func ask_bool(prompt) { give input(prompt): bool; }
+func ask_positive_int(prompt) {
+    var v = 0;
+    while v <= 0 { v = ask_int(prompt); }
+    give v;
+}

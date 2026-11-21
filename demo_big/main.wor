@@ -1,0 +1,147 @@
+// ============================================================================
+// WornewScript — big "Console + Windows" demo
+// Convenience check: input, imports, 16 .wor libraries + C libraries,
+// functions, recursion, loops, GUI.
+// Run:  ./wornew demo_big/main.wor
+//       ./wornew compile demo_big/main.wor -o demo_big/app
+// ============================================================================
+
+$APT "../libs/wor/io.wor";
+$APT "../libs/wor/math.wor";
+$APT "../libs/wor/string.wor";
+$APT "../libs/wor/random.wor";
+$APT "../libs/wor/time.wor";
+$APT "../libs/wor/logic.wor";
+$APT "../libs/wor/stats.wor";
+$APT "../libs/wor/money.wor";
+$APT "../libs/wor/physics.wor";
+$APT "../libs/wor/geometry.wor";
+$APT "../libs/wor/convert.wor";
+$APT "../libs/wor/input.wor";
+$APT "../libs/wor/gui.wor";
+$APT "../libs/wor/colors.wor";
+$APT "../libs/wor/loops.wor";
+$APT "../libs/wor/debug.wor";
+
+// Real C libraries are included with the same $APT — they are pasted
+// into the generated C and are available as c_* (in the VM they are already built in).
+$APT "../libs/math.c";
+$APT "../libs/stats.c";
+$APT "../libs/geometry.c";
+$APT "../libs/col.c";
+
+// ---------- project's own functions ----------
+func fib(n) {
+    if n < 2 { give n; }
+    give fib(n - 1) + fib(n - 2);
+}
+
+func grade(score) {
+    if score >= 90 { give "excellent"; }
+    elif score >= 70 { give "good"; }
+    elif score >= 50 { give "satisfactory"; }
+    give "needs improvement";
+}
+
+func print_report(a, b, c) {
+    dbg_title("REPORT");
+    say "average   = " + st_mean3(a, b, c);
+    say "median    = " + st_med3(a, b, c);
+    say "spread    = " + st_var3(a, b, c);
+    say "discount  = " + mo_discount(st_mean3(a, b, c), 10);
+    say "grade     = " + grade(st_mean3(a, b, c));
+    dbg_sep();
+}
+
+func console_demo() {
+    var a = ask_num("number A: ");
+    var b = ask_num("number B: ");
+    var c = ask_num("number C: ");
+    print_report(a, b, c);
+
+    say "--- powers table ---";
+    for (var i = 1; i <= 5; i += 1) {
+        say s_pad_left("x=" + i, 8) + " x^2=" + s_pad_left(m_square(i), 6) +
+            " x^3=" + m_cube(i);
+    }
+
+    say "--- randomness ---";
+    var i = 0;
+    while i < 5 {
+        say "dice: " + r_dice(6) + " (" + r_sign() + ")";
+        i += 1;
+    }
+
+    say "--- recursion and primality ---";
+    say "fib(12) = " + fib(12);
+    say "prime(97) = " + m_is_prime(97);
+    say "gcd(48, 18) = " + m_gcd(48, 18);
+    say "cv_c2f(37) = " + cv_c2f(37);
+    say "geo_dist(0,0,3,4) = " + geo_dist(0, 0, 3, 4);
+    say "ph_fall(2) = " + ph_fall(2);
+    say "C libs: c_square(12)=" + c_square(12) + ", c_med3(3,1,2)=" + c_med3(3, 1, 2) +
+        ", c_dist=" + c_dist(0, 0, 3, 4);
+}
+
+func gui_demo() {
+    var w = window("WornewScript — panel", 520, 360);
+    if w == 0 {
+        warn("failed to open window (X11 required)");
+        give 0;
+    }
+
+    font(2, C_TEXT);
+    var clicks = 0;
+    var checked = 1;
+    var frames = 0;
+
+    while win_open(w) and frames < 180 {
+        win_begin(w);
+        win_clear(w, C_BG);
+        panel(w, 12, 12, win_width(w) - 24, win_height(w) - 24);
+
+        label_ex(w, 30, 26, "WornewScript GUI demo", C_LAVENDER, 2);
+        label(w, 30, 62, "Frame: " + frames + "   Clicks: " + clicks);
+
+        if button(w, 30, 96, 150, 38, "Click me") { clicks += 1; }
+        if button(w, 190, 96, 130, 38, "Exit") { win_quit(w); }
+        checked = checkbox(w, 30, 150, "flag", checked);
+
+        var text = field(w, 30, 190, 300, 36, "type here");
+        label(w, 30, 236, "field: " + text);
+
+        rect(w, 340, 150, 30, 30, C_BLUE);
+        rect(w, 375, 150, 30, 30, C_GREEN);
+        rect(w, 410, 150, 30, 30, C_RED);
+
+        label(w, 30, 290, "ESC or 180 frames — exit");
+        win_end(w);
+
+        if g_close_key(w) { win_quit(w); }
+        sleep(16);
+        frames += 1;
+    }
+    say "GUI finished, frames: " + frames;
+}
+
+func main() {
+    dbg_title("WORNEWSCRIPT — BIG DEMO PROJECT");
+    s_banner("16 .wor + 16 C libraries + GUI + input");
+    say "loaded .wor: io math string random time logic stats";
+    say "                money physics geometry convert input gui";
+    say "                colors loops debug";
+    say "loaded C:    col control cwc dlc io keyboard math randnum sysfile";
+    say "                time winapi string stats money physics geometry";
+    blank();
+
+    var mode = ask_int("1 = console, 2 = windows: ");
+    t_begin();
+
+    if mode == 2 { gui_demo(); }
+    else { console_demo(); }
+
+    say "elapsed time: " + t_elapsed() + " ms";
+    ok("done");
+}
+
+main();

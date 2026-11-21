@@ -1,0 +1,9 @@
+// colors.wor — Catppuccin Mocha palette
+var C_BG = rgb(30, 30, 46);
+var C_SURFACE = rgb(49, 50, 68);
+var C_TEXT = rgb(205, 214, 244);
+var C_BLUE = rgb(137, 180, 250);
+var C_GREEN = rgb(166, 227, 161);
+var C_RED = rgb(243, 139, 168);
+var C_YELLOW = rgb(249, 226, 175);
+var C_LAVENDER = rgb(180, 190, 254);

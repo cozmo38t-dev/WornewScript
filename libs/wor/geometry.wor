@@ -1,0 +1,9 @@
+// geometry.wor — areas, perimeters, distances
+func geo_rect_area(w, h) { give w * h; }
+func geo_rect_perim(w, h) { give 2 * (w + h); }
+func geo_circle_area(r) { give 3.141592653589793 * r * r; }
+func geo_circle_circ(r) { give 2 * 3.141592653589793 * r; }
+func geo_triangle_area(b, h) { give b * h / 2; }
+func geo_dist(x1, y1, x2, y2) {
+    give sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+}

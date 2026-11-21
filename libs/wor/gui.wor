@@ -1,0 +1,15 @@
+// gui.wor — key constants and window helpers
+var KEY_ESC = 27;
+var KEY_ENTER = 13;
+var KEY_BACK = 8;
+var KEY_LEFT = 128;
+var KEY_RIGHT = 129;
+var KEY_UP = 130;
+var KEY_DOWN = 131;
+var KEY_SPACE = 32;
+
+func g_close_key(w) { if key_pressed(w, KEY_ESC) { give 1; } give 0; }
+func g_bg(w) { win_clear(w, rgb(30, 30, 46)); }
+func g_card(w, x, y, wd, ht) {
+    panel(w, x, y, wd, ht);
+}

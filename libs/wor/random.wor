@@ -1,0 +1,6 @@
+// random.wor — random numbers built on the built-in rand()
+func r_range(lo, hi) { give lo + rand() * (hi - lo); }
+func r_int(lo, hi) { give floor(lo + rand() * (hi - lo + 1)); }
+func r_percent() { give rand() * 100; }
+func r_sign() { if rand() < 0.5 { give -1; } give 1; }
+func r_dice(sides) { give r_int(1, sides); }
