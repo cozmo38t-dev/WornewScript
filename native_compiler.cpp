@@ -396,7 +396,7 @@ bool NativeCompiler::build_source(const std::string& source, const std::string& 
 
     std::string err_path = output + ".gccerr";
 #ifdef _WIN32
-    const char* gui_libs = " -lgdi32 -luser32";
+    const char* gui_libs = " -D_WIN32_WINNT=0x0601 -lgdi32 -luser32";
 #else
     const char* gui_libs = " -lX11";
 #endif

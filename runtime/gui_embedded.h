@@ -984,7 +984,7 @@ MgWindow *mg_create(const char *title, int width, int height)
         wc.style = CS_HREDRAW | CS_VREDRAW;
         wc.lpfnWndProc = mg_wndproc;
         wc.hInstance = w->hinst;
-        wc.hCursor = LoadCursorW(NULL, IDC_ARROW);
+        wc.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
         wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
         wc.lpszClassName = cls;
         if (!RegisterClassExW(&wc)) { free(w); return NULL; }

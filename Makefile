@@ -6,6 +6,7 @@ TARGET    = wornew
 
 WIN_CXX    ?= x86_64-w64-mingw32-g++
 WIN_TARGET  = wornew.exe
+WIN_CPPFLAGS = -D_WIN32_WINNT=0x0601 -DWS_LIBS_DIR='"libs"'
 
 SRCS = main.cpp lexer.cpp parser.cpp compiler.cpp vm.cpp gui_bindings.cpp input_bindings.cpp native_compiler.cpp direct_compiler.cpp native_calls.cpp
 OBJS = $(SRCS:.cpp=.o)
@@ -18,7 +19,7 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
 windows:
-	$(WIN_CXX) $(CXXFLAGS) -DWS_LIBS_DIR='"libs"' -o $(WIN_TARGET) $(SRCS) \
+	$(WIN_CXX) $(WIN_CPPFLAGS) $(CXXFLAGS) -o $(WIN_TARGET) $(SRCS) \
 		-static -static-libgcc -static-libstdc++ -lgdi32 -luser32
 
 %.o: %.cpp $(DEPS)
