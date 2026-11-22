@@ -36,7 +36,7 @@ jobs:
       - name: Assemble portable archives
         run: |
           for os in linux windows; do
-            cp -r libs README.md demo_v05.wor test.wor test_libs.wor test_c_libs.wor demo_big dist/$os/
+            cp -r libs office README.md demo_v05.wor test.wor test_libs.wor test_c_libs.wor demo_big dist/$os/
           done
           (cd dist/linux && zip -r ../wornew-linux-x86_64.zip .)
           (cd dist/windows && zip -r ../wornew-windows-x86_64.zip .)

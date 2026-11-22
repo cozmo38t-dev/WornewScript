@@ -37,6 +37,44 @@ make windows     # produces wornew.exe
 ./wornew tokens program.wor
 ```
 
+## IDE (WIDE)
+
+`office/` contains **WIDE**, a small IDLE-like editor for WornewScript with the
+same Catppuccin Mocha / Lavender design as the website. It has tabs, an explorer,
+line numbers, syntax highlighting, an output panel with interactive input, and
+Run / Build / Tokens buttons (`F5`, `F6`).
+
+Two ready launchers are included:
+
+| OS | File | Command |
+|---|---|---|
+| Linux | `office/wide` | `./office/wide program.wor` |
+| Windows | `office/wide.cmd` | `office\wide.cmd program.wor` |
+
+Both call the same `office/wide.py`. If you add the `office` folder to `PATH`,
+the command is simply:
+
+```bash
+wide program.wor
+```
+
+WIDE needs Python 3.10+ with `tkinter` (included in the official Python
+installers). It finds `wornew` next to itself, in the repository root, or in
+`PATH`; you can also set the interpreter manually with the **Interpreter**
+button. Settings are saved to `office/wide_config.json` on exit.
+
+### Desktop shortcut
+
+- **Windows:** right-click `wide.cmd` → **Send to** → **Desktop (create shortcut)**,
+  or just copy `wide.cmd` to the Desktop. Rename the shortcut to `WIDE`.
+- **Linux:** copy `wide.desktop` to the Desktop, then right-click it and choose
+  **Allow Launching**. You can also copy it to `~/.local/share/applications`.
+  If `wide` is not in `PATH`, edit the `Exec=` line to the absolute path of
+  `office/wide`.
+
+Opening a file from the shortcut works too: drop a `.wor` file onto it or pass
+the path as an argument. See `office/README.md` for the file map and keybindings.
+
 ## Speed (1M summation iterations)
 
 | Mode | Time | Relative to Python |
@@ -218,6 +256,7 @@ Core builtins: `sqrt`, `abs`, `pow`, `min`, `max`, `len`, `int`, `str`,
 | `libs/wor/` | 16 standard WornewScript libraries |
 | `libs/` | 16 standard C libraries |
 | `demo_big/`, `demo_v05.wor`, `test_libs.wor`, `test_c_libs.wor` | examples |
+| `office/` | WIDE IDE source, launchers and desktop entry |
 | `main.cpp` | CLI |
 
 Backups: `WornewScript.bak-v06-clibs-20261121.tar.gz` (C libraries),

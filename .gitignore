@@ -9,6 +9,12 @@ prog.c
 
 # Local backups and editor files
 *.bak
+*.bak-*
 *.tar.gz
 .DS_Store
 *~
+
+# WIDE local state
+office/wide_config.json
+office/__pycache__/
+office/*.pyc

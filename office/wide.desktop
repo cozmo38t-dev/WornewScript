@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=WIDE - Wornew IDE
+Comment=Editor and runner for WornewScript programs
+Exec=wide %f
+Terminal=false
+Categories=Development;IDE;TextEditor;
+MimeType=text/plain;
+Keywords=wornew;wornewscript;ide;editor;
+StartupNotify=true
