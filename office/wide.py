@@ -19,6 +19,7 @@ import threading
 from pathlib import Path
 
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import filedialog, messagebox, ttk
 
 APP_NAME = "WIDE"
@@ -77,6 +78,281 @@ STARTER = """// New WornewScript file
 var name = input("Name: "): str;
 say "Hello, " + name + "!";
 """
+
+
+def mix(color_a: str, color_b: str, factor: float) -> str:
+    """Linear blend of two #rrggbb colors."""
+    a = tuple(int(color_a[i:i + 2], 16) for i in (1, 3, 5))
+    b = tuple(int(color_b[i:i + 2], 16) for i in (1, 3, 5))
+    return "#" + "".join(
+        f"{round(a[i] + (b[i] - a[i]) * factor):02x}" for i in range(3)
+    )
+
+
+def round_rect(canvas: tk.Canvas, x1, y1, x2, y2, radius=10, **kwargs) -> int:
+    r = min(radius, (x2 - x1) / 2, (y2 - y1) / 2)
+    points = [
+        x1 + r, y1, x2 - r, y1, x2, y1, x2, y1 + r,
+        x2, y2 - r, x2, y2, x2 - r, y2, x1 + r, y2,
+        x1, y2, x1, y2 - r, x1, y1 + r, x1, y1,
+    ]
+    return canvas.create_polygon(points, smooth=True, **kwargs)
+
+
+class RoundButton(tk.Canvas):
+    """Flat rounded button drawn on a Canvas - no legacy bevels."""
+
+    def __init__(self, master, text, command=None, accent=False,
+                 width=None, height=34, bg=BASE):
+        self._font = tkfont.Font(family=UI_FONT[0], size=UI_FONT[1], weight="bold")
+        req_width = width or max(56, self._font.measure(text) + 30)
+        self._bg = bg
+        super().__init__(
+            master, width=req_width, height=height,
+            bg=bg, highlightthickness=0, bd=0, cursor="hand2"
+        )
+        self._text = text
+        self._command = command
+        self._accent = accent
+        self._req_width = req_width
+        self._req_height = height
+        self._hover = False
+        self._disabled = False
+
+        self.bind("<Enter>", self._on_enter)
+        self.bind("<Leave>", self._on_leave)
+        self.bind("<ButtonPress-1>", self._on_press)
+        self.bind("<ButtonRelease-1>", self._on_release)
+        self.bind("<Configure>", lambda _e: self._draw())
+        self._draw()
+
+    def _on_enter(self, _event=None):
+        self._hover = True
+        self._draw()
+
+    def _on_leave(self, _event=None):
+        self._hover = False
+        self._draw()
+
+    def _on_press(self, _event=None):
+        if not self._disabled:
+            self.configure(bg=mix(self._bg, CRUST, 0.5))
+
+    def _on_release(self, _event=None):
+        self.configure(bg=self._bg)
+        if not self._disabled and self._command:
+            self._command()
+
+    def set_disabled(self, disabled: bool) -> None:
+        self._disabled = bool(disabled)
+        self.configure(cursor="arrow" if self._disabled else "hand2")
+        self._draw()
+
+    def _draw(self) -> None:
+        w = self.winfo_width() or self._req_width
+        h = self.winfo_height() or self._req_height
+        self.delete("all")
+
+        if self._disabled:
+            fill, fg, outline = SURFACE, MUTED, ""
+        elif self._accent:
+            fill = BLUE if self._hover else LAVENDER
+            fg, outline = MANTLE, ""
+        else:
+            fill = SURFACE2 if self._hover else SURFACE
+            fg = TEXT
+            outline = LAVENDER if self._hover else ""
+
+        round_rect(self, 2, 3, w - 1, h - 1, 10,
+                   fill=mix(self._bg, CRUST, 0.5), outline="")
+        round_rect(
+            self, 1, 1, w - 3, h - 3, 10,
+            fill=fill, outline=outline, width=1 if outline else 0,
+        )
+        self.create_text(w / 2, h / 2, text=self._text, font=self._font, fill=fg)
+
+
+class RoundEntry(tk.Canvas):
+    """Rounded input field that behaves like a normal tk.Entry."""
+
+    def __init__(self, master, textvariable=None, width=320, height=34, bg=BASE):
+        self._bg = bg
+        super().__init__(
+            master, width=width, height=height,
+            bg=bg, highlightthickness=0, bd=0
+        )
+        self._req_width = width
+        self._req_height = height
+        self._entry = tk.Entry(
+            self,
+            textvariable=textvariable,
+            bg=SURFACE2,
+            fg=TEXT,
+            insertbackground=LAVENDER,
+            selectbackground=SURFACE2,
+            selectforeground=TEXT,
+            relief="flat",
+            bd=0,
+            highlightthickness=0,
+            font=UI_FONT,
+            disabledbackground=SURFACE,
+            disabledforeground=MUTED,
+        )
+        self._window = self.create_window(width / 2, height / 2, window=self._entry)
+        self._focused = False
+        self._entry.bind("<FocusIn>", lambda _e: self._set_focus(True))
+        self._entry.bind("<FocusOut>", lambda _e: self._set_focus(False))
+        tk.Canvas.bind(self, "<Configure>", lambda _e: self._draw())
+        self._draw()
+
+    def _set_focus(self, focused: bool) -> None:
+        self._focused = focused
+        self._draw()
+
+    def _draw(self) -> None:
+        w = self.winfo_width() or self._req_width
+        h = self.winfo_height() or self._req_height
+        self.delete("shape")
+        round_rect(
+            self, 1, 1, w - 2, h - 2, 10,
+            fill=SURFACE2,
+            outline=BLUE if self._focused else SURFACE2,
+            width=1,
+            tags=("shape",),
+        )
+        self.tag_lower("shape")
+        self.coords(self._window, w / 2, h / 2)
+        self.itemconfigure(self._window, width=max(20, w - 26))
+
+    def bind(self, sequence=None, func=None, add=None):
+        return self._entry.bind(sequence, func, add)
+
+    def focus_set(self) -> None:
+        self._entry.focus_set()
+
+    def set_state(self, state: str) -> None:
+        self._entry.configure(state=state)
+        self._draw()
+
+
+class ModernNotebook(tk.Frame):
+    """Flat VS Code-like tab bar drawn with plain tk widgets."""
+
+    def __init__(self, master, on_close=None):
+        super().__init__(master, bg=BASE)
+        self._tabbar = tk.Frame(self, bg=MANTLE, height=40)
+        self._tabbar.pack(side="top", fill="x")
+        self._underline = tk.Frame(self._tabbar, bg=LAVENDER, height=2)
+        tk.Frame(self, bg=SURFACE, height=1).pack(side="top", fill="x")
+        self._container = tk.Frame(self, bg=BASE)
+        self._container.pack(fill="both", expand=True)
+        self._tabs: list[dict] = []
+        self._current = None
+        self._on_close = on_close
+
+    def add(self, frame, text: str = "") -> None:
+        item = {
+            "frame": frame,
+            "active": False,
+            "hover": False,
+        }
+        item["label"] = tk.Label(
+            self._tabbar, text=text, bg=MANTLE, fg=MUTED,
+            font=(UI_FONT[0], 9, "bold"), padx=14, pady=8,
+            bd=0, cursor="hand2",
+        )
+        item["close"] = tk.Label(
+            self._tabbar, text="×", bg=MANTLE, fg=MUTED,
+            font=(UI_FONT[0], 12), padx=8, pady=8,
+            bd=0, cursor="hand2",
+        )
+        item["label"].bind("<Button-1>", lambda _e, f=frame: self.select(f))
+        item["close"].bind("<Button-1>", lambda _e, f=frame: self._request_close(f))
+        for widget in (item["label"], item["close"]):
+            widget.bind("<Enter>", lambda _e, i=item: self._hover(i, True))
+            widget.bind("<Leave>", lambda _e, i=item: self._hover(i, False))
+        item["label"].pack(side="left", padx=(6, 0))
+        item["close"].pack(side="left", padx=(0, 6))
+        self._tabs.append(item)
+        self.select(frame)
+
+    def _hover(self, item: dict, hovering: bool) -> None:
+        item["hover"] = hovering
+        self._refresh_item(item)
+
+    def _refresh_item(self, item: dict) -> None:
+        if item["active"]:
+            bg, fg, close_fg = BASE, LAVENDER, PINK
+        elif item["hover"]:
+            bg, fg, close_fg = SURFACE, TEXT, PINK
+        else:
+            bg, fg, close_fg = MANTLE, MUTED, MUTED
+        item["label"].configure(bg=bg, fg=fg)
+        item["close"].configure(bg=bg, fg=close_fg)
+
+    def _request_close(self, frame) -> None:
+        self.select(frame)
+        if self._on_close:
+            self._on_close()
+
+    def select(self, frame=None):
+        if frame is None:
+            return str(self._current) if self._current is not None else ""
+        target = str(frame)
+        found = None
+        for item in self._tabs:
+            item["active"] = str(item["frame"]) == target
+            item["frame"].pack_forget()
+            self._refresh_item(item)
+            if item["active"]:
+                found = item
+        if found is None:
+            return ""
+        found["frame"].pack(in_=self._container, fill="both", expand=True)
+        self._current = found["frame"]
+        self.after(1, lambda: self._place_underline(found))
+        self.event_generate("<<NotebookTabChanged>>")
+        return str(self._current)
+
+    def _place_underline(self, item: dict) -> None:
+        try:
+            self._underline.place(
+                x=item["label"].winfo_x() + 6,
+                y=38,
+                width=item["label"].winfo_width() + item["close"].winfo_width(),
+                height=2,
+            )
+        except tk.TclError:
+            pass
+
+    def index(self, frame) -> int:
+        for i, item in enumerate(self._tabs):
+            if str(item["frame"]) == str(frame):
+                return i
+        return -1
+
+    def forget(self, index: int) -> None:
+        if not 0 <= index < len(self._tabs):
+            return
+        item = self._tabs.pop(index)
+        was_current = str(item["frame"]) == str(self._current)
+        item["frame"].pack_forget()
+        item["label"].destroy()
+        item["close"].destroy()
+        if was_current:
+            self._current = None
+            self._underline.place_forget()
+            if self._tabs:
+                self.select(self._tabs[0]["frame"])
+            else:
+                self.event_generate("<<NotebookTabChanged>>")
+
+    def tab(self, index: int, text: str | None = None):
+        if not 0 <= index < len(self._tabs):
+            return None
+        if text is not None:
+            self._tabs[index]["label"].configure(text=text)
+        return self._tabs[index]["label"].cget("text")
 
 
 def load_config() -> dict:
@@ -271,7 +547,7 @@ class Wide(tk.Tk):
         self.config_data = load_config()
         self.interpreter = find_interpreter(self.config_data)
         self.tabs: list[EditorTab] = []
-        self.notebook: ttk.Notebook
+        self.notebook: ModernNotebook
         self.explorer_dir = Path(
             self.config_data.get("last_dir") or Path.cwd()
         )
@@ -299,141 +575,225 @@ class Wide(tk.Tk):
     # ---------- UI ----------
 
     def _build_style(self) -> None:
+        # ttk is kept only for the tree, scrollbars and the paned divider.
+        # Every other widget is drawn with flat tk widgets in the site palette.
         style = ttk.Style(self)
         style.theme_use("clam")
 
         style.configure("TFrame", background=BASE)
-        style.configure("Status.TFrame", background=MANTLE)
-        style.configure("TLabel", background=BASE, foreground=TEXT, font=UI_FONT)
-        style.configure("Muted.TLabel", foreground=MUTED)
-        style.configure("Kicker.TLabel", foreground=LAVENDER, font=(UI_FONT[0], 9, "bold"))
-        style.configure("Status.TLabel", background=MANTLE, foreground=MUTED, font=(UI_FONT[0], 9))
-
-        style.configure(
-            "TButton",
-            background=SURFACE,
-            foreground=TEXT,
-            borderwidth=0,
-            focusthickness=0,
-            padding=(10, 6),
-            font=UI_FONT,
-        )
-        style.map(
-            "TButton",
-            background=[("active", SURFACE2), ("disabled", SURFACE)],
-            foreground=[("disabled", MUTED)],
-        )
-        style.configure("Accent.TButton", background=LAVENDER, foreground=MANTLE)
-        style.map("Accent.TButton", background=[("active", BLUE)])
-
-        style.configure("TNotebook", background=BASE, borderwidth=0)
-        style.configure(
-            "TNotebook.Tab",
-            background=SURFACE,
-            foreground=MUTED,
-            padding=(14, 7),
-            borderwidth=0,
-            font=UI_FONT,
-        )
-        style.map(
-            "TNotebook.Tab",
-            background=[("selected", BASE)],
-            foreground=[("selected", LAVENDER)],
-        )
-
         style.configure(
             "Treeview",
             background=MANTLE,
             fieldbackground=MANTLE,
             foreground=TEXT,
-            rowheight=24,
+            rowheight=26,
             borderwidth=0,
             font=UI_FONT,
         )
-        style.map("Treeview", background=[("selected", SURFACE2)])
-        style.configure("Treeview.Heading", background=SURFACE, foreground=LAVENDER, font=UI_FONT)
-
-        style.configure("TScrollbar", background=SURFACE, troughcolor=MANTLE, borderwidth=0)
+        style.map(
+            "Treeview",
+            background=[("selected", SURFACE2)],
+            foreground=[("selected", LAVENDER)],
+        )
+        style.configure(
+            "Treeview.Heading",
+            background=SURFACE,
+            foreground=LAVENDER,
+            relief="flat",
+            borderwidth=0,
+            font=UI_FONT,
+        )
+        style.configure(
+            "TScrollbar",
+            background=SURFACE,
+            troughcolor=MANTLE,
+            borderwidth=0,
+            relief="flat",
+            arrowcolor=MUTED,
+        )
         style.configure("TPanedwindow", background=BASE)
 
-    def _build_ui(self) -> None:
-        toolbar = ttk.Frame(self, padding=(10, 8))
-        toolbar.pack(side="top", fill="x")
+    def _build_header(self) -> None:
+        header = tk.Frame(self, bg=CRUST, height=52)
+        header.pack(side="top", fill="x")
 
-        def button(label: str, command, accent: bool = False) -> ttk.Button:
-            b = ttk.Button(
-                toolbar,
-                text=label,
-                command=command,
-                style="Accent.TButton" if accent else "TButton",
+        logo = tk.Canvas(header, width=34, height=34, bg=CRUST,
+                         highlightthickness=0, bd=0)
+        logo.pack(side="left", padx=(14, 8), pady=8)
+        round_rect(logo, 1, 1, 33, 33, 10, fill=LAVENDER)
+        logo.create_text(17, 17, text="W", fill=MANTLE,
+                         font=(UI_FONT[0], 15, "bold"))
+
+        brand = tk.Frame(header, bg=CRUST)
+        brand.pack(side="left")
+        tk.Label(brand, text="WIDE", bg=CRUST, fg=TEXT,
+                 font=(UI_FONT[0], 14, "bold")).pack(anchor="w")
+        tk.Label(brand, text="WORNEW IDE", bg=CRUST, fg=COMMENT,
+                 font=(UI_FONT[0], 8, "bold")).pack(anchor="w")
+
+        tk.Frame(header, bg=SURFACE, width=1, height=28).pack(
+            side="left", padx=(18, 12), pady=12
+        )
+
+        def button(label: str, command, accent: bool = False, width=None):
+            b = RoundButton(
+                header, label, command=command, accent=accent,
+                width=width, height=32, bg=CRUST,
             )
-            b.pack(side="left", padx=(0, 6))
+            b.pack(side="left", padx=(0, 6), pady=10)
             return b
 
         button("◫ Open", self.open_file)
         button("◇ Save", lambda: self.save_file())
-        ttk.Separator(toolbar, orient="vertical").pack(side="left", fill="y", padx=8)
-        self.run_button = button("▶ Run", lambda: self.run_current("run"), accent=True)
+        tk.Frame(header, bg=SURFACE, width=1, height=24).pack(
+            side="left", padx=(6, 12), pady=14
+        )
+        button("▶ Run", lambda: self.run_current("run"), accent=True)
         button("⚙ Build", lambda: self.run_current("compile"))
         button("⌘ Tokens", lambda: self.run_current("tokens"))
         self.stop_button = button("■ Stop", self.stop_process)
-        self.stop_button.configure(state="disabled")
-        ttk.Separator(toolbar, orient="vertical").pack(side="left", fill="y", padx=8)
+        self.stop_button.set_disabled(True)
+        tk.Frame(header, bg=SURFACE, width=1, height=24).pack(
+            side="left", padx=(6, 12), pady=14
+        )
         button("⋯ Interpreter", self.choose_interpreter)
 
-        status = ttk.Frame(self, height=26, padding=(12, 4), style="Status.TFrame")
-        status.pack(side="bottom", fill="x")
-        self.status_left = ttk.Label(status, text="", style="Status.TLabel")
-        self.status_left.pack(side="left")
-        self.status_right = ttk.Label(status, text="", style="Status.TLabel")
-        self.status_right.pack(side="right")
+        self.run_chip = tk.Label(
+            header, text="● READY", bg=CRUST, fg=GREEN,
+            font=(UI_FONT[0], 9, "bold"), padx=10,
+        )
+        self.run_chip.pack(side="right", padx=(0, 16))
 
-        main = ttk.PanedWindow(self, orient="horizontal")
+        strip = tk.Canvas(self, height=3, bg=CRUST,
+                          highlightthickness=0, bd=0)
+        strip.pack(side="top", fill="x")
+
+        def paint_gradient(_event=None) -> None:
+            w = strip.winfo_width()
+            strip.delete("all")
+            if w < 4:
+                return
+            steps = min(160, max(4, w // 5))
+            for i in range(steps):
+                t = i / (steps - 1)
+                color = (mix(LAVENDER, BLUE, t * 2) if t < 0.5
+                         else mix(BLUE, PINK, (t - 0.5) * 2))
+                strip.create_line(
+                    i * w / steps, 0, (i + 1) * w / steps + 1, 3,
+                    fill=color, width=1,
+                )
+
+        strip.bind("<Configure>", paint_gradient)
+
+    def _build_ui(self) -> None:
+        self.configure(bg=BASE)
+        self._build_header()
+
+        status = tk.Frame(self, bg=MANTLE, height=28)
+        status.pack(side="bottom", fill="x")
+        tk.Frame(status, bg=SURFACE, height=1).pack(side="top", fill="x")
+        self.status_left = tk.Label(
+            status, text="", bg=MANTLE, fg=MUTED,
+            font=(UI_FONT[0], 9), anchor="w",
+        )
+        self.status_left.pack(side="left", padx=(14, 0), pady=5)
+        self.status_right = tk.Label(
+            status, text="", bg=MANTLE, fg=COMMENT,
+            font=(UI_FONT[0], 9), anchor="e",
+        )
+        self.status_right.pack(side="right", padx=(0, 14), pady=5)
+
+        main = tk.PanedWindow(
+            self, orient="horizontal", bg=BASE,
+            sashwidth=6, sashrelief="flat", opaqueresize=True,
+        )
         main.pack(fill="both", expand=True)
 
-        sidebar = ttk.Frame(main, width=230)
-        work = ttk.Frame(main)
-        main.add(sidebar, weight=0)
-        main.add(work, weight=1)
+        sidebar = tk.Frame(main, bg=MANTLE, width=240)
+        work = tk.Frame(main, bg=BASE)
+        main.add(sidebar, stretch="never")
+        main.add(work, stretch="always")
 
-        explorer_head = ttk.Frame(sidebar, padding=(10, 8))
-        explorer_head.pack(fill="x")
-        ttk.Label(explorer_head, text="EXPLORER", style="Kicker.TLabel").pack(side="left")
-        ttk.Button(explorer_head, text="⋯", width=3, command=self.choose_explorer_dir).pack(side="right")
-        ttk.Button(explorer_head, text="↻", width=3, command=self.populate_explorer).pack(side="right", padx=(0, 4))
+        explorer_head = tk.Frame(sidebar, bg=MANTLE, height=42)
+        explorer_head.pack(fill="x", padx=(14, 10), pady=(12, 6))
+        tk.Label(
+            explorer_head, text="EXPLORER", bg=MANTLE, fg=LAVENDER,
+            font=(UI_FONT[0], 9, "bold"),
+        ).pack(side="left")
+        RoundButton(
+            explorer_head, "⋯", command=self.choose_explorer_dir,
+            width=28, height=26, bg=MANTLE,
+        ).pack(side="right")
+        RoundButton(
+            explorer_head, "↻", command=self.populate_explorer,
+            width=28, height=26, bg=MANTLE,
+        ).pack(side="right", padx=(0, 4))
+        tk.Frame(sidebar, bg=SURFACE, height=1).pack(fill="x")
 
-        tree_frame = ttk.Frame(sidebar)
-        tree_frame.pack(fill="both", expand=True)
+        tree_frame = tk.Frame(sidebar, bg=MANTLE)
+        tree_frame.pack(fill="both", expand=True, padx=8, pady=(4, 10))
         self.tree = ttk.Treeview(tree_frame, show="tree", selectmode="browse")
-        tree_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        tree_scroll = ttk.Scrollbar(tree_frame, orient="vertical",
+                                    command=self.tree.yview)
         self.tree.configure(yscrollcommand=tree_scroll.set)
         self.tree.pack(side="left", fill="both", expand=True)
         tree_scroll.pack(side="right", fill="y")
         self.tree.bind("<Double-1>", self._on_tree_double)
         self.populate_explorer()
 
-        self.notebook = ttk.Notebook(work)
+        self.notebook = ModernNotebook(work, on_close=self.close_tab)
         self.notebook.pack(fill="both", expand=True)
         self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
-        bottom = ttk.Frame(work, height=210)
-        bottom.pack(fill="x", side="bottom")
-        out_head = ttk.Frame(bottom, padding=(10, 6))
+        bottom = tk.Frame(work, bg=CRUST, height=210)
+        bottom.pack(fill="both", side="bottom")
+        tk.Frame(bottom, bg=SURFACE, height=1).pack(side="top", fill="x")
+
+        out_head = tk.Frame(bottom, bg=MANTLE, height=34)
         out_head.pack(fill="x")
-        ttk.Label(out_head, text="OUTPUT", style="Kicker.TLabel").pack(side="left")
-        ttk.Button(out_head, text="Clear", command=self.clear_output).pack(side="right")
-        ttk.Button(out_head, text="Copy", command=self.copy_output).pack(side="right", padx=(0, 6))
+        tk.Label(
+            out_head, text="OUTPUT", bg=MANTLE, fg=LAVENDER,
+            font=(UI_FONT[0], 9, "bold"),
+        ).pack(side="left", padx=(14, 0))
+        RoundButton(
+            out_head, "Copy", command=self.copy_output,
+            width=58, height=26, bg=MANTLE,
+        ).pack(side="right", padx=(0, 12))
+        RoundButton(
+            out_head, "Clear", command=self.clear_output,
+            width=58, height=26, bg=MANTLE,
+        ).pack(side="right")
+
+        input_row = tk.Frame(bottom, bg=MANTLE, height=44)
+        input_row.pack(fill="x", side="bottom")
+        tk.Frame(input_row, bg=SURFACE, height=1).pack(side="top", fill="x")
+        tk.Label(
+            input_row, text="›", bg=MANTLE, fg=LAVENDER,
+            font=(UI_FONT[0], 14, "bold"),
+        ).pack(side="left", padx=(14, 8))
+        self.input_var = tk.StringVar()
+        self.input_entry = RoundEntry(
+            input_row, textvariable=self.input_var,
+            width=360, height=30, bg=MANTLE,
+        )
+        self.input_entry.pack(side="left", fill="x", expand=True, pady=7)
+        self.input_entry.bind("<Return>", self.send_input)
+        self.input_entry.set_state("disabled")
+        RoundButton(
+            input_row, "Send", command=self.send_input,
+            width=64, height=30, bg=MANTLE,
+        ).pack(side="right", padx=(8, 12))
 
         self.output = tk.Text(
             bottom,
-            height=9,
+            height=8,
             wrap="word",
             bg=CRUST,
             fg=TEXT,
             font=EDITOR_FONT,
             relief="flat",
             borderwidth=0,
-            padx=12,
+            padx=14,
             pady=8,
             state="disabled",
         )
@@ -442,15 +802,6 @@ class Wide(tk.Tk):
         self.output.tag_configure("ok", foreground=GREEN)
         self.output.tag_configure("input", foreground=BLUE)
         self.output.pack(fill="both", expand=True)
-
-        input_row = ttk.Frame(bottom, padding=(10, 6))
-        input_row.pack(fill="x")
-        ttk.Label(input_row, text="›", style="Kicker.TLabel").pack(side="left", padx=(0, 6))
-        self.input_var = tk.StringVar()
-        self.input_entry = ttk.Entry(input_row, textvariable=self.input_var, state="disabled")
-        self.input_entry.pack(side="left", fill="x", expand=True)
-        self.input_entry.bind("<Return>", self.send_input)
-        ttk.Button(input_row, text="Send", command=self.send_input).pack(side="left", padx=(6, 0))
 
     def _bind_keys(self) -> None:
         self.bind("<Control-o>", lambda _e: self.open_file())
@@ -562,6 +913,8 @@ class Wide(tk.Tk):
         index = self.notebook.index(tab.frame)
         self.notebook.forget(index)
         self.tabs.remove(tab)
+        if not self.tabs:
+            self.new_file()
         self.update_status()
 
     def update_tab_title(self, tab: EditorTab) -> None:
@@ -717,8 +1070,9 @@ class Wide(tk.Tk):
             messagebox.showerror("WIDE", f"Cannot start interpreter:\n{exc}")
             return
 
-        self.stop_button.configure(state="normal")
-        self.input_entry.configure(state="normal")
+        self.stop_button.set_disabled(False)
+        self.input_entry.set_state("normal")
+        self.run_chip.configure(text="● RUNNING", fg=YELLOW)
         self._polling = True
         thread = threading.Thread(target=self._reader, args=(self.proc,), daemon=True)
         thread.start()
@@ -759,8 +1113,9 @@ class Wide(tk.Tk):
     def _process_done(self, code: int) -> None:
         self._polling = False
         self.proc = None
-        self.stop_button.configure(state="disabled")
-        self.input_entry.configure(state="disabled")
+        self.stop_button.set_disabled(True)
+        self.input_entry.set_state("disabled")
+        self.run_chip.configure(text="● READY", fg=GREEN)
         tag = "ok" if code == 0 else "err"
         self._append_output(f"\n[process exited with code {code}]\n", tag)
 
